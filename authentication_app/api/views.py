@@ -1,0 +1,69 @@
+from rest_framework.response import Response
+from rest_framework import generics
+# from user_auth_app.models import UserProfile
+# from .serializers import RegistrationSerializer, UserProfileSerializer
+from rest_framework.views import APIView
+from rest_framework.permissions import AllowAny
+from rest_framework.authtoken.models import Token
+from rest_framework.authtoken.views import ObtainAuthToken
+from authentication_app.api.serializers import RegistrationSerializer, UserProfileSerializer
+from authentication_app.models import UserProfile
+
+# Create your views here.
+
+class UserProfileList(generics.ListCreateAPIView):
+    queryset = UserProfile.objects.all()
+    serializer_class = UserProfileSerializer
+
+class UserProfileDetail(generics.RetrieveUpdateDestroyAPIView):
+    queryset = UserProfile.objects.all()
+    serializer_class = UserProfileSerializer
+
+class RegistrationView(APIView):
+  permission_classes = [AllowAny]
+
+  def post(self, request):
+    serializer = RegistrationSerializer(data=request.data)
+    saved_account = None 
+    data = {}
+
+    if serializer.is_valid():
+        saved_account = serializer.save()
+        token, _ = Token.objects.get_or_create(user=saved_account)
+        data = {
+            'token': token.key,
+            'username': saved_account.username,
+            'email': saved_account.email
+        }
+        status_code = 201
+    else:
+        data = serializer.errors
+        status_code = 400
+
+    return Response(data, status=status_code)
+  
+
+# Custom Login View to return additional user info
+class LoginView(ObtainAuthToken):
+  permission_classes = [AllowAny]
+
+  def post(self, request):
+    serializer = self.serializer_class(data=request.data)
+    data = {}
+
+    if serializer.is_valid():
+        user = serializer.validated_data['user']
+        token, _ = Token.objects.get_or_create(user=user)
+
+        # Zusätzliche User-Informationen im Response-Body
+        data = {
+            'token': token.key,
+            'username': user.username,
+            'email': user.email
+        }
+        status_code = 201
+    else:
+        data = serializer.errors
+        status_code = 400
+
+    return Response(data, status=status_code)
