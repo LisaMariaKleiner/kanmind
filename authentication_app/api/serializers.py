@@ -3,9 +3,11 @@ from authentication_app.models import UserProfile
 from django.contrib.auth.models import User
 
 class UserProfileSerializer(serializers.ModelSerializer):
+    id = serializers.IntegerField(source='user.id', read_only=True)
+
     class Meta:
         model = UserProfile
-        fields = ['user', 'bio', 'location']
+        fields = ['id', 'user', 'bio', 'location']
         
 
 
