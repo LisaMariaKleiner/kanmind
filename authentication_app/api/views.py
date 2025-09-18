@@ -44,25 +44,24 @@ class RegistrationView(APIView):
 
 # Custom Login View to return additional user info
 class LoginView(ObtainAuthToken):
-  permission_classes = [AllowAny]
+    permission_classes = [AllowAny]
 
-  def post(self, request):
-    serializer = self.serializer_class(data=request.data)
-    data = {}
+    def post(self, request):
+        serializer = self.serializer_class(data=request.data)
+        data = {}
 
-    if serializer.is_valid():
-        user = serializer.validated_data['user']
-        token, _ = Token.objects.get_or_create(user=user)
+        if serializer.is_valid():
+            user = serializer.validated_data['user']
+            token, _ = Token.objects.get_or_create(user=user)
+            data = {
+                'token': token.key,
+                'fullname': user.username,
+                'email': user.email,
+                'user_id': user.id
+            }
+            status_code = 201
+        else:
+            data = serializer.errors
+            status_code = 400
 
-        # Zusätzliche User-Informationen im Response-Body
-        data = {
-            'token': token.key,
-            'fullname': user.username,
-            'email': user.email
-        }
-        status_code = 201
-    else:
-        data = serializer.errors
-        status_code = 400
-
-    return Response(data, status=status_code)
+        return Response(data, status=status_code)
