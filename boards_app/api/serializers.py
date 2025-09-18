@@ -39,6 +39,7 @@ class BoardListSerializer(serializers.ModelSerializer):
         return 0  # Platzhalter
 
 
+# Für GET (Detailansicht  von User)
 class UserShortSerializer(serializers.ModelSerializer):
     fullname = serializers.CharField(source='username')
 
@@ -46,6 +47,8 @@ class UserShortSerializer(serializers.ModelSerializer):
         model = User
         fields = ['id', 'email', 'fullname']
 
+
+# Für GET (Detailansicht von Board)
 class BoardDetailSerializer(serializers.ModelSerializer):
     owner_id = serializers.IntegerField(source='owner.id')
     members = UserShortSerializer(many=True)
