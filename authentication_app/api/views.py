@@ -1,7 +1,5 @@
 from rest_framework.response import Response
 from rest_framework import generics
-# from user_auth_app.models import UserProfile
-# from .serializers import RegistrationSerializer, UserProfileSerializer
 from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny
 from rest_framework.authtoken.models import Token
@@ -9,7 +7,6 @@ from rest_framework.authtoken.views import ObtainAuthToken
 from authentication_app.api.serializers import RegistrationSerializer, UserProfileSerializer
 from authentication_app.models import UserProfile
 
-# Create your views here.
 
 class UserProfileList(generics.ListCreateAPIView):
     queryset = UserProfile.objects.all()
@@ -29,11 +26,13 @@ class RegistrationView(APIView):
 
     if serializer.is_valid():
         saved_account = serializer.save()
-        token, _ = Token.objects.get_or_create(user=saved_account)
+        token, created = Token.objects.get_or_create(user=saved_account)
         data = {
             'token': token.key,
-            'username': saved_account.username,
-            'email': saved_account.email
+            'fullname': saved_account.username,
+            'email': saved_account.email,
+            'user_id': saved_account.id
+
         }
         status_code = 201
     else:
@@ -58,7 +57,7 @@ class LoginView(ObtainAuthToken):
         # Zusätzliche User-Informationen im Response-Body
         data = {
             'token': token.key,
-            'username': user.username,
+            'fullname': user.username,
             'email': user.email
         }
         status_code = 201
