@@ -10,24 +10,24 @@ class UserProfileSerializer(serializers.ModelSerializer):
 
 
 class RegistrationSerializer(serializers.ModelSerializer):
-
+    fullname = serializers.CharField(write_only=True)
     repeated_password = serializers.CharField(write_only=True)
 
     class Meta:
         model = User
-        fields = ['username', 'password', 'repeated_password', 'email']
+        fields = ['fullname', 'password', 'repeated_password', 'email']
         extra_kwargs = {'password': {'write_only': True}}
 
     def save(self, **kwargs):
-
         password = self.validated_data['password']
         repeated_password = self.validated_data['repeated_password']
+        fullname = self.validated_data['fullname']
 
         if password != repeated_password:
             raise serializers.ValidationError({'password': 'Passwords must match.'})
 
         account = User(email=self.validated_data['email'],
-                       username=self.validated_data['username'])
+                       username=fullname)
         
         account.set_password(password)
         account.save()
