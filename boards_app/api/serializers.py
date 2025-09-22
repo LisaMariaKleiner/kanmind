@@ -1,8 +1,10 @@
-from rest_framework import serializers
-from boards_app.models import Board
 from django.contrib.auth.models import User
 
-# Für POST/PUT (Erstellen/Bearbeiten)
+from rest_framework import serializers
+
+from tasks_app.models import Task
+from boards_app.models import Board
+
 class BoardSerializer(serializers.ModelSerializer):
     """
     Serializer für das Erstellen und Bearbeiten von Boards.
@@ -20,7 +22,8 @@ class BoardSerializer(serializers.ModelSerializer):
         model = Board
         fields = ['id', 'title', 'owner', 'members']
 
-# Für GET (Listenansicht)
+
+
 class BoardListSerializer(serializers.ModelSerializer):
     """
     Serializer für die Listenansicht von Boards.
@@ -61,7 +64,7 @@ class BoardListSerializer(serializers.ModelSerializer):
         return 0  # Platzhalter
 
 
-# Für GET (Detailansicht  von User)
+
 class UserShortSerializer(serializers.ModelSerializer):
     """
     Serializer für Kurzinfos eines Users.
@@ -78,7 +81,7 @@ class UserShortSerializer(serializers.ModelSerializer):
         fields = ['id', 'email', 'fullname']
 
 
-# Für GET (Detailansicht von Board)
+
 class BoardDetailSerializer(serializers.ModelSerializer):
     """
     Serializer für die Detailansicht eines Boards.
@@ -99,4 +102,6 @@ class BoardDetailSerializer(serializers.ModelSerializer):
         fields = ['id', 'title', 'owner_id', 'members', 'tasks']
 
     def get_tasks(self, obj):
-        return []  # Platzhalter, bis das Task-Modell existiert
+        from tasks_app.api.serializers import TaskListSerializer  
+        tasks = Task.objects.filter(board=obj)
+        return TaskListSerializer(tasks, many=True).data
