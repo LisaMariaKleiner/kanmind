@@ -13,6 +13,12 @@ from django.contrib.auth.models import User
 # Zeigt alle Boards an, bei denen der Benutzer Eigentümer oder Mitglied ist
 # Beim Erstellen wird der Eigentümer automatisch auf den angemeldeten Benutzer gesetzt
 class BoardListCreateView(generics.ListCreateAPIView):
+    """
+    API-Endpoint zum Auflisten und Erstellen von Boards.
+    GET: Gibt alle Boards zurück, bei denen der User Owner oder Member ist.
+    POST: Erstellt ein neues Board mit dem aktuellen User als Owner.
+    """
+    authentication_classes = [TokenAuthentication]
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
@@ -38,6 +44,11 @@ class BoardListCreateView(generics.ListCreateAPIView):
 # Nur der Eigentümer kann ein Board löschen
 # Mitglieder und Eigentümer können Details anzeigen und bearbeiten
 class BoardDetailView(generics.RetrieveUpdateDestroyAPIView):
+    """
+    API-Endpoint für Details, Bearbeiten und Löschen eines Boards.
+    GET/PATCH: Owner oder Member.
+    DELETE: Nur Owner.
+    """
     queryset = Board.objects.all()
     serializer_class = BoardDetailSerializer
 
@@ -58,7 +69,11 @@ class BoardDetailView(generics.RetrieveUpdateDestroyAPIView):
 
 
 class EmailCheckView(generics.GenericAPIView):
-    permission_classes = [permissions.IsAuthenticated, EmailExistsPermission]
+    """
+    API-Endpoint zur Prüfung, ob eine E-Mail einem registrierten User zugeordnet ist.
+    GET: Gibt Userdaten zurück, falls vorhanden.
+    """
+    permission_classes = [permissions.IsAuthenticated] 
 
     def get(self, request, *args, **kwargs):
         email = request.query_params.get('email')

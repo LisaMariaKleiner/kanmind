@@ -10,7 +10,26 @@ from tasks_app.models import Comment
 from tasks_app.models import Comment
 
 class CommentSerializer(serializers.ModelSerializer):
+    """
+    Serializer für einen Kommentar zu einer Task.
+
+    Felder:
+        - id: Kommentar-ID
+        - created_at: Erstellungszeitpunkt
+        - author: Name des Autors (username)
+        - content: Inhalt des Kommentars
+    """
     author = serializers.CharField(source='author.username', read_only=True)
+    """
+    Serializer für Tasks in Listen- und Detailansicht.
+
+    Felder:
+        - id, board, title, description, status, priority, due_date
+        - assignee: Bearbeiter (UserShortSerializer)
+        - reviewer: Prüfer (UserShortSerializer)
+        - comments_count: Anzahl der Kommentare
+        - comments: Liste der Kommentare (CommentSerializer)
+    """
     content = serializers.CharField()
 
     class Meta:
@@ -39,6 +58,22 @@ class TaskListSerializer(serializers.ModelSerializer):
 
 
 class TaskCreateSerializer(serializers.ModelSerializer):
+    """
+    Serializer für das Erstellen und Aktualisieren von Tasks.
+
+    Felder:
+        - id, board, title, description, status, priority, due_date
+        - assignee_id: ID des Bearbeiters (write_only)
+        - reviewer_id: ID des Prüfers (write_only)
+
+    Validierung:
+        - Prüft, ob der User Mitglied des Boards ist.
+        - Prüft, ob assignee/reviewer Mitglieder des Boards sind.
+        - Prüft Status und Priorität auf gültige Werte.
+
+    Ausgabe:
+        - Gibt assignee, reviewer, comments_count und comments wie in TaskListSerializer aus.
+    """
     assignee_id = serializers.PrimaryKeyRelatedField(
         queryset=User.objects.all(), source='assignee', required=False, allow_null=True, write_only=True
     )

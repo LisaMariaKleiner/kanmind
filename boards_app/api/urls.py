@@ -1,3 +1,11 @@
+"""
+URL-Konfiguration für das boards_app API.
+
+Enthält folgende Endpunkte:
+- /api/boards/                : Liste aller Boards und Erstellen eines neuen Boards (GET, POST)
+- /api/boards/<int:pk>/       : Details, Aktualisieren und Löschen eines einzelnen Boards (GET, PATCH/PUT, DELETE)
+- /api/boards/email-check/    : Prüft, ob eine E-Mail einem registrierten Benutzer zugeordnet ist (GET, Query-Parameter: email)
+"""
 from django.urls import path
 from .views import BoardDetailView, BoardListCreateView, EmailCheckView
 

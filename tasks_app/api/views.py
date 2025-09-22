@@ -7,6 +7,9 @@ from rest_framework.exceptions import NotFound
 
 
 class AssignedTasksListView(generics.ListAPIView):
+    """
+    Listet alle Tasks, bei denen der User als Bearbeiter oder Prüfer eingetragen ist.
+    """
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = TaskListSerializer
 
@@ -17,7 +20,11 @@ class AssignedTasksListView(generics.ListAPIView):
         ).distinct()
 
 
+
 class ReviewingTasksListView(generics.ListAPIView):
+    """
+    Listet alle Tasks, bei denen der User als Prüfer eingetragen ist.
+    """
     serializer_class = TaskListSerializer
     permission_classes = [permissions.IsAuthenticated]
 
@@ -26,7 +33,11 @@ class ReviewingTasksListView(generics.ListAPIView):
         return Task.objects.filter(reviewer=user)
     
 
+
 class TaskCreateView(generics.CreateAPIView):
+    """
+    Erstellt eine neue Task. Nur Board-Mitglieder dürfen Tasks anlegen.
+    """
     queryset = Task.objects.all()
     serializer_class = TaskCreateSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -36,6 +47,10 @@ class TaskCreateView(generics.CreateAPIView):
 
 
 class TaskDetailView(generics.RetrieveUpdateDestroyAPIView):
+    """
+    Zeigt Details, erlaubt Bearbeiten und Löschen einer Task.
+    Nur Ersteller oder Board-Owner dürfen löschen.
+    """
     queryset = Task.objects.all()
     permission_classes = [permissions.IsAuthenticated]
 
@@ -65,6 +80,10 @@ class CommentCreateView(generics.CreateAPIView):
 
 
 class CommentDetailView(generics.RetrieveUpdateDestroyAPIView):
+    """
+    Zeigt Details, erlaubt Bearbeiten und Löschen eines Kommentars.
+    Nur der Autor darf löschen, Board-Mitglieder dürfen anzeigen/bearbeiten.
+    """
     serializer_class = CommentSerializer
 
     def get_permissions(self):

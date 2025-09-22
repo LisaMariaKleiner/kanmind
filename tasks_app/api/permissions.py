@@ -1,6 +1,5 @@
 from rest_framework import permissions
 
-
 class IsTaskCreatorOrBoardOwner(permissions.BasePermission):
     """
     Erlaubt das Löschen einer Task nur, wenn der anfragende User
@@ -8,14 +7,17 @@ class IsTaskCreatorOrBoardOwner(permissions.BasePermission):
     """
 
     def has_object_permission(self, request, view, obj):
-        # Annahme: Task hat ein Feld 'created_by', das beim Erstellen gesetzt wird
         return (
             obj.created_by == request.user or
             obj.board.owner == request.user
         )
     
 
+
 class IsBoardMember(permissions.BasePermission):
+    """
+    Erlaubt Aktionen (z.B. Kommentare erstellen), wenn der User Mitglied oder Owner des Boards der Task ist.
+    """
     def has_permission(self, request, view):
         task_id = view.kwargs.get('task_id')
         from tasks_app.models import Task
@@ -30,5 +32,8 @@ class IsBoardMember(permissions.BasePermission):
 
 
 class IsCommentAuthor(permissions.BasePermission):
+    """
+    Erlaubt das Löschen/Bearbeiten eines Kommentars nur durch dessen Autor.
+    """
     def has_object_permission(self, request, view, obj):
         return obj.author == request.user

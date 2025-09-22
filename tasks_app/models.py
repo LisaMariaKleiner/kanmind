@@ -3,6 +3,23 @@ from django.contrib.auth.models import User
 from boards_app.models import Board
 
 class Task(models.Model):
+	"""
+    Modell für einen Task innerhalb eines Boards.
+
+    Felder:
+        - board: Zugehöriges Board (ForeignKey)
+        - title: Titel des Tasks
+        - description: Beschreibung des Tasks (optional)
+        - status: Status des Tasks (to-do, in-progress, review, done)
+        - priority: Priorität des Tasks (low, medium, high)
+        - assignee: Bearbeiter (User, optional)
+        - reviewer: Prüfer (User, optional)
+        - due_date: Fälligkeitsdatum (optional)
+        - created_by: Ersteller des Tasks
+
+    Zweck:
+        Tasks können Boards zugeordnet, verschiedenen Nutzern zugewiesen und mit Status/Priorität versehen werden.
+    """
 	STATUS_CHOICES = [
 		('to-do', 'To Do'),
 		('in-progress', 'In Progress'),
@@ -30,6 +47,19 @@ class Task(models.Model):
 
 
 class Comment(models.Model):
+    """
+    Modell für einen Kommentar zu einer Aufgabe.
+
+    Felder:
+        - task: Zugehörige Aufgabe (ForeignKey)
+        - author: Autor des Kommentars (User)
+        - content: Inhalt des Kommentars
+        - created_at: Erstellungszeitpunkt
+
+    Zweck:
+        Kommentare ermöglichen Diskussionen und Notizen zu einzelnen Aufgaben.
+    """
+
     task = models.ForeignKey('Task', related_name='comments', on_delete=models.CASCADE)
     author = models.ForeignKey(User, related_name='comments', on_delete=models.CASCADE)
     content = models.TextField()

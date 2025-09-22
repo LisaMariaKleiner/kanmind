@@ -11,15 +11,38 @@ from django.contrib.auth.models import User
 
 
 class UserProfileList(generics.ListCreateAPIView):
+    """
+    API-Endpoint zum Auflisten und Erstellen von UserProfiles.
+    GET:
+        Gibt eine Liste aller UserProfile-Objekte zurück.
+    POST:
+        Erstellt ein neues UserProfile.
+    """
     queryset = UserProfile.objects.all()
     serializer_class = UserProfileSerializer
 
 class UserProfileDetail(generics.RetrieveUpdateDestroyAPIView):
+    """
+    API-Endpoint zum Abrufen, Aktualisieren und Löschen eines einzelnen UserProfiles.
+    GET:
+        Gibt die Details eines UserProfiles zurück.
+    PUT/PATCH:
+        Aktualisiert das UserProfile.
+    DELETE:
+        Löscht das UserProfile.
+    """
     queryset = UserProfile.objects.all()
     serializer_class = UserProfileSerializer
 
 class RegistrationView(APIView):
-  permission_classes = [AllowAny]
+    """
+    API-Endpoint zur Registrierung eines neuen Benutzers.
+
+    POST:
+        Erwartet Benutzerdaten (z.B. username, email, password).
+        Gibt bei Erfolg ein Auth-Token und Userdaten zurück.
+    """
+    permission_classes = [AllowAny]
 
   def post(self, request):
     serializer = RegistrationSerializer(data=request.data)
@@ -46,6 +69,13 @@ class RegistrationView(APIView):
 
 # Custom Login View to return additional user info
 class LoginView(ObtainAuthToken):
+    """
+    API-Endpoint für den Login.
+
+    POST:
+        Erwartet username und password.
+        Gibt bei Erfolg ein Auth-Token und Userdaten zurück.
+    """
     permission_classes = [AllowAny]
 
     def post(self, request):

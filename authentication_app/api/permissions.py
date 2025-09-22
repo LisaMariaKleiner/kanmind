@@ -3,6 +3,14 @@ from django.contrib.auth.models import User
 from rest_framework import permissions
 
 class EmailExistsPermission(permissions.BasePermission):
+	"""
+    Permission-Klasse, die prüft, ob ein User mit einer bestimmten E-Mail existiert.
+
+    Verwendung:
+        - Erwartet den Query-Parameter 'email' in der Anfrage.
+        - Gibt Zugriff nur frei, wenn ein User mit dieser E-Mail existiert.
+        - Setzt eine verständliche Fehlermeldung, falls die E-Mail fehlt oder nicht gefunden wird.
+    """
 	message = 'Die E-Mail-Adresse existiert nicht.'
 
 	def has_permission(self, request, view):

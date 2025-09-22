@@ -1,8 +1,19 @@
+"""
+Serializers für das authentication_app API.
+
+- UserProfileSerializer: Serialisiert UserProfile-Objekte für Anzeige und Bearbeitung.
+- RegistrationSerializer: Validiert und erstellt neue User-Accounts mit Passwortabgleich und E-Mail-Prüfung.
+"""
+
 from rest_framework import serializers
 from authentication_app.models import UserProfile
 from django.contrib.auth.models import User
 
 class UserProfileSerializer(serializers.ModelSerializer):
+    """
+    Serializer für UserProfile-Objekte.
+    Gibt die User-ID, das zugehörige User-Objekt, die Biografie und den Standort aus.
+    """
     id = serializers.IntegerField(source='user.id', read_only=True)
 
     class Meta:
@@ -12,6 +23,22 @@ class UserProfileSerializer(serializers.ModelSerializer):
 
 
 class RegistrationSerializer(serializers.ModelSerializer):
+    """
+    Serializer für die Registrierung eines neuen Users.
+
+    Felder:
+        - fullname: Name des Nutzers (wird als username gespeichert)
+        - password: Passwort (write_only)
+        - repeated_password: Passwort-Wiederholung (write_only)
+        - email: E-Mail-Adresse
+
+    Validierung:
+        - Prüft, ob die Passwörter übereinstimmen.
+        - Prüft, ob die E-Mail bereits vergeben ist.
+
+    Speicherung:
+        - Erstellt einen neuen User mit verschlüsseltem Passwort.
+    """
     fullname = serializers.CharField(write_only=True)
     repeated_password = serializers.CharField(write_only=True)
 
