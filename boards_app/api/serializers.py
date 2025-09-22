@@ -93,6 +93,7 @@ class BoardDetailSerializer(serializers.ModelSerializer):
         - members: Liste der Mitglieder (als UserShortSerializer)
         - tasks: Liste der Tasks (Platzhalter, bis Task-Modell existiert)
     """
+    title = serializers.CharField(required=False)
     owner_id = serializers.IntegerField(source='owner.id')
     members = UserShortSerializer(many=True)
     tasks = serializers.SerializerMethodField()
