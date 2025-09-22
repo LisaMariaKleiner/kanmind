@@ -9,6 +9,16 @@ from rest_framework import serializers
 from authentication_app.models import UserProfile
 from django.contrib.auth.models import User
 
+
+class LoginSerializer(serializers.Serializer):
+    """
+    Serializer für den Login.
+    Erwartet E-Mail und Passwort.
+    """
+    email = serializers.EmailField()
+    password = serializers.CharField()
+    
+
 class UserProfileSerializer(serializers.ModelSerializer):
     """
     Serializer für UserProfile-Objekte.

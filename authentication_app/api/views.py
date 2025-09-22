@@ -1,13 +1,15 @@
+from django.contrib.auth import authenticate, get_user_model
+from django.contrib.auth.models import User
+from rest_framework.authtoken.models import Token
+from rest_framework.authtoken.views import ObtainAuthToken
+
 from rest_framework.response import Response
 from rest_framework import generics
 from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from authentication_app.api.permissions import EmailExistsPermission
-from rest_framework.authtoken.models import Token
-from rest_framework.authtoken.views import ObtainAuthToken
-from authentication_app.api.serializers import RegistrationSerializer, UserProfileSerializer
+from authentication_app.api.serializers import LoginSerializer, RegistrationSerializer, UserProfileSerializer
 from authentication_app.models import UserProfile
-from django.contrib.auth.models import User
 
 
 class UserProfileList(generics.ListCreateAPIView):
@@ -20,6 +22,7 @@ class UserProfileList(generics.ListCreateAPIView):
     """
     queryset = UserProfile.objects.all()
     serializer_class = UserProfileSerializer
+    permission_classes = [IsAuthenticated]
 
 
 class UserProfileDetail(generics.RetrieveUpdateDestroyAPIView):
@@ -34,6 +37,7 @@ class UserProfileDetail(generics.RetrieveUpdateDestroyAPIView):
     """
     queryset = UserProfile.objects.all()
     serializer_class = UserProfileSerializer
+    permission_classes = [IsAuthenticated]
 
 
 class RegistrationView(APIView):
@@ -69,31 +73,42 @@ class RegistrationView(APIView):
         return Response(data, status=status_code)
   
 
-class LoginView(ObtainAuthToken):
+class LoginView(APIView):
     """
     API-Endpoint für den Login.
 
     POST:
-        Erwartet username und password.
+        Erwartet email und password.
         Gibt bei Erfolg ein Auth-Token und Userdaten zurück.
     """
     permission_classes = [AllowAny]
 
     def post(self, request):
-        serializer = self.serializer_class(data=request.data)
+        serializer = LoginSerializer(data=request.data)
         data = {}
 
         try:
             if serializer.is_valid():
-                user = serializer.validated_data['user']
-                token, _ = Token.objects.get_or_create(user=user)
-                data = {
-                    'token': token.key,
-                    'fullname': user.username,
-                    'email': user.email,
-                    'user_id': user.id,
-                }
-                status_code = 200
+                email = serializer.validated_data['email']
+                password = serializer.validated_data['password']
+                User = get_user_model()
+                try:
+                    user_obj = User.objects.get(email=email)
+                except User.DoesNotExist:
+                    return Response({'detail': 'Ungültige Zugangsdaten.'}, status=401)
+                user = authenticate(username=user_obj.username, password=password)
+                if user:
+                    token, _ = Token.objects.get_or_create(user=user)
+                    data = {
+                        'token': token.key,
+                        'fullname': user.username,
+                        'email': user.email,
+                        'user_id': user.id,
+                    }
+                    status_code = 200
+                else:
+                    data = {'detail': 'Ungültige Zugangsdaten.'}
+                    status_code = 401
             else:
                 data = {'detail': 'Ungültige Anfragedaten.'}
                 status_code = 400
