@@ -143,7 +143,7 @@ class TaskDetailView(generics.RetrieveUpdateDestroyAPIView):
 
 
 
-class CommentListView(generics.ListAPIView):
+class TaskCommentListCreateView(generics.ListCreateAPIView):
     serializer_class = CommentSerializer
     permission_classes = [permissions.IsAuthenticated, IsBoardMember]
 
@@ -157,20 +157,6 @@ class CommentListView(generics.ListAPIView):
 
     def get_queryset(self):
         return Comment.objects.filter(task=self.task).order_by('created_at')
-
-
-
-class CommentCreateView(generics.CreateAPIView):
-    serializer_class = CommentSerializer
-    permission_classes = [permissions.IsAuthenticated, IsBoardMember]
-
-    def initial(self, request, *args, **kwargs):
-        task_id = self.kwargs['task_id']
-        try:
-            self.task = Task.objects.get(pk=task_id)
-        except Task.DoesNotExist:
-            raise NotFound("Task nicht gefunden. Die angegebene Task-ID existiert nicht.")
-        super().initial(request, *args, **kwargs)
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user, task=self.task)

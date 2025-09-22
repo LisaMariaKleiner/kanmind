@@ -43,7 +43,12 @@ class Task(models.Model):
 	created_by = models.ForeignKey(User, related_name='created_tasks', on_delete=models.CASCADE)
 
 	def __str__(self):
-		return self.title
+			return self.title
+
+	class Meta:
+			verbose_name = "Task"
+			verbose_name_plural = "Tasks"
+			ordering = ["-due_date", "priority"]    
 
 
 class Comment(models.Model):
@@ -64,3 +69,11 @@ class Comment(models.Model):
     author = models.ForeignKey(User, related_name='comments', on_delete=models.CASCADE)
     content = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Comment by {self.author.username} on {self.task.title}"
+
+    class Meta:
+        verbose_name = "Comment"
+        verbose_name_plural = "Comments"
+        ordering = ["-created_at"]

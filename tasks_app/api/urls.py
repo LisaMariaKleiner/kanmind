@@ -10,15 +10,13 @@ Enthält folgende Endpunkte:
 - /api/tasks/<int:task_id>/comments/<int:comment_id>/ : Details, Aktualisieren und Löschen eines Kommentars (GET, PATCH/PUT, DELETE)
 """
 from django.urls import path
-from .views import AssignedTasksListView, CommentCreateView, CommentDetailView, CommentListView, ReviewingTasksListView, TaskCreateView, TaskDetailView
+from .views import AssignedTasksListView, CommentDetailView, ReviewingTasksListView, TaskCommentListCreateView, TaskCreateView, TaskDetailView
 
 urlpatterns = [
     path('assigned-to-me/', AssignedTasksListView.as_view(), name='assigned-to-me'),
     path('reviewing/', ReviewingTasksListView.as_view(), name='reviewing'),
     path('', TaskCreateView.as_view(), name='task-create'),
     path('<int:pk>/', TaskDetailView.as_view(), name='task-detail'),  
-    path('<int:task_id>/comments/', CommentListView.as_view(), name='task-comments-list'),
-    path('<int:task_id>/comments/', CommentCreateView.as_view(), name='task-comments'),
+    path('<int:task_id>/comments/', TaskCommentListCreateView.as_view(), name='task-comments-list-create'),
     path('<int:task_id>/comments/<int:comment_id>/', CommentDetailView.as_view(), name='task-comment-detail'),
-
 ]
