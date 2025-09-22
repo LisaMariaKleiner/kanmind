@@ -1,9 +1,14 @@
-from rest_framework import generics, permissions
 from django.db import models
+
+from rest_framework import generics, permissions
+from rest_framework.exceptions import NotFound
+from rest_framework.response import Response
+
 from tasks_app.api.permissions import IsBoardMember, IsCommentAuthor, IsTaskCreatorOrBoardOwner
 from tasks_app.models import Task
 from .serializers import CommentSerializer, TaskCreateSerializer, TaskListSerializer
-from rest_framework.exceptions import NotFound
+from tasks_app.models import Comment
+
 
 
 class AssignedTasksListView(generics.ListAPIView):
@@ -42,8 +47,67 @@ class TaskCreateView(generics.CreateAPIView):
     serializer_class = TaskCreateSerializer
     permission_classes = [permissions.IsAuthenticated]
 
-    def perform_create(self, serializer):
-        serializer.save(created_by=self.request.user)
+    def create(self, request, *args, **kwargs):
+        data = request.data.copy()
+        user = request.user
+        board, error = self._get_board(data, user)
+        if error:
+            return error
+        error = self._check_status_priority(data)
+        if error:
+            return error
+        error = self._check_assignee_reviewer(data, board)
+        if error:
+            return error
+        return self._save_task(data, user, board)
+
+    def _get_board(self, data, user):
+        from boards_app.models import Board
+        board_id = data.get('board')
+        if not board_id:
+            return None, Response({'detail': 'Board-ID muss angegeben werden.'}, status=400)
+        try:
+            board = Board.objects.get(pk=board_id)
+        except Board.DoesNotExist:
+            return None, Response({'detail': 'Board nicht gefunden. Das angegebene Board existiert nicht.'}, status=404)
+        if not (user == board.owner or user in board.members.all()):
+            return None, Response({'detail': 'Verboten. Der Benutzer muss Mitglied des Boards sein, um eine Task zu erstellen.'}, status=403)
+        return board, None
+
+    def _check_status_priority(self, data):
+        allowed_status = ['to-do', 'in-progress', 'review', 'done']
+        allowed_priority = ['low', 'medium', 'high']
+        if data.get('status') not in allowed_status:
+            return Response({'detail': f"Ungültiger Status. Erlaubte Werte: {', '.join(allowed_status)}."}, status=400)
+        if data.get('priority') not in allowed_priority:
+            return Response({'detail': f"Ungültige Priority. Erlaubte Werte: {', '.join(allowed_priority)}."}, status=400)
+        return None
+
+    def _check_assignee_reviewer(self, data, board):
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+        for role in ['assignee', 'reviewer']:
+            user_id = data.get(f'{role}_id')
+            if user_id:
+                try:
+                    user_obj = User.objects.get(pk=user_id)
+                except User.DoesNotExist:
+                    return Response({'detail': f'{role.capitalize()} nicht gefunden.'}, status=400)
+                if not (user_obj == board.owner or user_obj in board.members.all()):
+                    return Response({'detail': f'{role.capitalize()} muss Mitglied des Boards sein.'}, status=400)
+                data[role] = user_id
+            else:
+                data[role] = None
+        return None
+
+    def _save_task(self, data, user, board):
+        serializer = self.get_serializer(data=data)
+        if serializer.is_valid():
+            task = serializer.save(created_by=user, board=board)
+            response_serializer = TaskListSerializer(task)
+            return Response(response_serializer.data, status=201)
+        return Response({'detail': 'Ungültige Anfragedaten.', 'errors': serializer.errors}, status=400)
+
 
 
 class TaskDetailView(generics.RetrieveUpdateDestroyAPIView):
@@ -63,19 +127,53 @@ class TaskDetailView(generics.RetrieveUpdateDestroyAPIView):
         if self.request.method == 'DELETE':
             return [permissions.IsAuthenticated(), IsTaskCreatorOrBoardOwner()]
         return [permissions.IsAuthenticated()]
-    
 
-from tasks_app.models import Comment
+    def update(self, request, *args, **kwargs):
+        serializer_class = self.get_serializer_class()
+        valid_fields = set(serializer_class().get_fields().keys())
 
-class CommentCreateView(generics.CreateAPIView):
-    serializer_class = CommentSerializer  
+        for key in request.data.keys():
+            if key not in valid_fields:
+                return Response(
+                    {"detail": f"Ungültiges Feld: '{key}'."},
+                    status=400
+                )
+
+        return super().update(request, *args, **kwargs)
+
+
+
+class CommentListView(generics.ListAPIView):
+    serializer_class = CommentSerializer
     permission_classes = [permissions.IsAuthenticated, IsBoardMember]
 
-    def perform_create(self, serializer):
+    def initial(self, request, *args, **kwargs):
         task_id = self.kwargs['task_id']
-        from tasks_app.models import Task
-        task = Task.objects.get(pk=task_id)
-        serializer.save(author=self.request.user, task=task)
+        try:
+            self.task = Task.objects.get(pk=task_id)
+        except Task.DoesNotExist:
+            raise NotFound("Task nicht gefunden. Die angegebene Task-ID existiert nicht.")
+        super().initial(request, *args, **kwargs)
+
+    def get_queryset(self):
+        return Comment.objects.filter(task=self.task).order_by('created_at')
+
+
+
+class CommentCreateView(generics.CreateAPIView):
+    serializer_class = CommentSerializer
+    permission_classes = [permissions.IsAuthenticated, IsBoardMember]
+
+    def initial(self, request, *args, **kwargs):
+        task_id = self.kwargs['task_id']
+        try:
+            self.task = Task.objects.get(pk=task_id)
+        except Task.DoesNotExist:
+            raise NotFound("Task nicht gefunden. Die angegebene Task-ID existiert nicht.")
+        super().initial(request, *args, **kwargs)
+
+    def perform_create(self, serializer):
+        serializer.save(author=self.request.user, task=self.task)
 
 
 
