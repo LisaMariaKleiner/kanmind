@@ -17,12 +17,20 @@ This repository contains the backend for the KanMind project, built with Django 
    cd backend
    ```
 
-2. **Create a virtual environment (recommended):**
+2. **Create a virtual environment:**
 
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
-   ```
+   - **Linux/Mac:**
+
+     ```bash
+     python -m venv venv
+     source venv/bin/activate
+     ```
+
+   - **Windows:**
+     ```bash
+     python -m venv venv
+     venv\Scripts\activate
+     ```
 
 3. **Install dependencies:**
 
