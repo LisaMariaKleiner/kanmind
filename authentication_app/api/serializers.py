@@ -48,20 +48,24 @@ class RegistrationSerializer(serializers.ModelSerializer):
         extra_kwargs = {'password': {'write_only': True}}
 
     def save(self, **kwargs):
+        self._validate_passwords()
+        return self._create_user()
+
+    def _validate_passwords(self):
         password = self.validated_data['password']
         repeated_password = self.validated_data['repeated_password']
-        fullname = self.validated_data['fullname']
-
         if password != repeated_password:
             raise serializers.ValidationError({'password': 'Passwords must match.'})
 
-        account = User(email=self.validated_data['email'],
-                       username=fullname)
-        
-        account.set_password(password)
+    def _create_user(self):
+        fullname = self.validated_data['fullname']
+        account = User(
+            email=self.validated_data['email'],
+            username=fullname
+        )
+        account.set_password(self.validated_data['password'])
         account.save()
         return account
-    
 
     def validate_email(self, value):
         if User.objects.filter(email=value).exists():
