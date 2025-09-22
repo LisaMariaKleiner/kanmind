@@ -85,6 +85,11 @@ class BoardDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Board.objects.all()
     serializer_class = BoardDetailSerializer
 
+    def get_serializer_class(self):
+        if self.request.method in ['PUT', 'PATCH']:
+            return BoardSerializer  
+        return BoardDetailSerializer
+    
     def get_permissions(self):
         if self.request.method == 'DELETE':
             permission_classes = [permissions.IsAuthenticated, IsBoardOwner]
