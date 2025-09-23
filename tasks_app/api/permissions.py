@@ -37,3 +37,10 @@ class IsCommentAuthor(permissions.BasePermission):
     """
     def has_object_permission(self, request, view, obj):
         return obj.author == request.user
+    
+
+def is_board_member_or_owner(user, board):
+    """
+    Gibt True zurück, wenn der User Owner oder Mitglied des Boards ist.
+    """
+    return user == board.owner or user in board.members.all()
