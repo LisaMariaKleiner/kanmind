@@ -28,7 +28,7 @@ class AssignedTasksListView(generics.ListAPIView):
 
 class ReviewingTasksListView(generics.ListAPIView):
     """
-    Listet alle Tasks, bei denen der User als Prüfer eingetragen ist.
+    Listet alle Tasks, bei denen der User als Prüfer eingetragen ist. 
     """
     serializer_class = TaskListSerializer
     permission_classes = [permissions.IsAuthenticated]

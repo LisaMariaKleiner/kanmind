@@ -38,7 +38,34 @@ class TaskListSerializer(serializers.ModelSerializer):
     assignee = UserShortSerializer()
     reviewer = UserShortSerializer()
     comments_count = serializers.SerializerMethodField()
-    comments = CommentSerializer(many=True, read_only=True)
+    
+
+    class Meta:
+        model = Task
+        fields = [
+            'id', 'board', 'title', 'description', 'status', 'priority',
+            'assignee', 'reviewer', 'due_date', 'comments_count'
+        ]
+
+    def get_comments_count(self, obj):
+        return obj.comments.count()
+    
+
+class TaskDetailSerializer(serializers.ModelSerializer):
+    """
+    Detaillierter Serializer für eine Task.
+
+    Felder:
+        - id, board, title, description, status, priority, due_date
+        - assignee: Bearbeiter (UserShortSerializer)
+        - reviewer: Prüfer (UserShortSerializer)
+        - comments_count: Anzahl der Kommentare
+        - comments: Liste der Kommentare (CommentSerializer)
+    """
+    assignee = UserShortSerializer()
+    reviewer = UserShortSerializer()
+    comments_count = serializers.SerializerMethodField()
+    comments = CommentSerializer(many=True)
 
     class Meta:
         model = Task
@@ -111,8 +138,12 @@ class TaskCreateSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         rep = super().to_representation(instance)
+        # Entferne assignee_id und reviewer_id aus der Ausgabe
+        rep.pop('assignee_id', None)
+        rep.pop('reviewer_id', None)
+        # Füge verschachtelte User-Objekte hinzu
         rep['assignee'] = UserShortSerializer(instance.assignee).data if instance.assignee else None
         rep['reviewer'] = UserShortSerializer(instance.reviewer).data if instance.reviewer else None
         rep['comments_count'] = instance.comments.count()
-        rep['comments'] = CommentSerializer(instance.comments, many=True).data
+        # Keine comments-Liste in der POST-Antwort
         return rep
