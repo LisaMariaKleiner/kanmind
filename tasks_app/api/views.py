@@ -88,7 +88,12 @@ class TaskCreateView(generics.CreateAPIView):
         User = get_user_model()
         for role in ['assignee', 'reviewer']:
             user_id = data.get(f'{role}_id')
-            if user_id:
+            if user_id is not None:
+                if not isinstance(user_id, int):
+                    try:
+                        user_id = int(user_id)
+                    except (ValueError, TypeError):
+                        return Response({'detail': f'{role.capitalize()} muss eine gültige User-ID (Zahl) sein.'}, status=400)
                 try:
                     user_obj = User.objects.get(pk=user_id)
                 except User.DoesNotExist:
