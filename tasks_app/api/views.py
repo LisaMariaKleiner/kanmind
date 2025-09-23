@@ -1,4 +1,5 @@
 from django.db import models
+from django.contrib.auth import get_user_model
 
 from rest_framework import generics, permissions
 from rest_framework.exceptions import NotFound
@@ -8,6 +9,8 @@ from tasks_app.api.permissions import IsBoardMember, IsCommentAuthor, IsTaskCrea
 from tasks_app.models import Task
 from .serializers import CommentSerializer, TaskCreateSerializer, TaskListSerializer
 from tasks_app.models import Comment
+from boards_app.models import Board
+from tasks_app.api.permissions import is_board_member_or_owner
 
 
 
@@ -62,7 +65,6 @@ class TaskCreateView(generics.CreateAPIView):
         return self._save_task(data, user, board)
 
     def _get_board(self, data, user):
-        from boards_app.models import Board
         board_id = data.get('board')
         if not board_id:
             return None, Response({'detail': 'Board-ID muss angegeben werden.'}, status=400)
@@ -70,7 +72,7 @@ class TaskCreateView(generics.CreateAPIView):
             board = Board.objects.get(pk=board_id)
         except Board.DoesNotExist:
             return None, Response({'detail': 'Board nicht gefunden. Das angegebene Board existiert nicht.'}, status=404)
-        if not (user == board.owner or user in board.members.all()):
+        if not is_board_member_or_owner(user, board):
             return None, Response({'detail': 'Verboten. Der Benutzer muss Mitglied des Boards sein, um eine Task zu erstellen.'}, status=403)
         return board, None
 
@@ -84,7 +86,6 @@ class TaskCreateView(generics.CreateAPIView):
         return None
 
     def _check_assignee_reviewer(self, data, board):
-        from django.contrib.auth import get_user_model
         User = get_user_model()
         for role in ['assignee', 'reviewer']:
             user_id = data.get(f'{role}_id')
@@ -98,7 +99,7 @@ class TaskCreateView(generics.CreateAPIView):
                     user_obj = User.objects.get(pk=user_id)
                 except User.DoesNotExist:
                     return Response({'detail': f'{role.capitalize()} nicht gefunden.'}, status=400)
-                if not (user_obj == board.owner or user_obj in board.members.all()):
+                if not is_board_member_or_owner(user_obj, board):
                     return Response({'detail': f'{role.capitalize()} muss Mitglied des Boards sein.'}, status=400)
                 data[role] = user_id
             else:
