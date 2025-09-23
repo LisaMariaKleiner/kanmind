@@ -95,7 +95,7 @@ class LoginView(APIView):
                 try:
                     user_obj = User.objects.get(email=email)
                 except User.DoesNotExist:
-                    return Response({'detail': 'Ungültige Zugangsdaten.'}, status=401)
+                    return Response({'detail': 'Ungültige Zugangsdaten.'}, status=400)
                 user = authenticate(username=user_obj.username, password=password)
                 if user:
                     token, _ = Token.objects.get_or_create(user=user)
@@ -108,7 +108,7 @@ class LoginView(APIView):
                     status_code = 200
                 else:
                     data = {'detail': 'Ungültige Zugangsdaten.'}
-                    status_code = 401
+                    status_code = 400
             else:
                 data = {'detail': 'Ungültige Anfragedaten.'}
                 status_code = 400
