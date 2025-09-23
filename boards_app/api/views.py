@@ -115,6 +115,7 @@ class BoardDetailView(generics.RetrieveUpdateDestroyAPIView):
         except Exception:
             return self._server_error()
 
+
     def partial_update(self, request, *args, **kwargs):
         if not request.user or not request.user.is_authenticated:
             return self._unauthorized()
@@ -124,16 +125,27 @@ class BoardDetailView(generics.RetrieveUpdateDestroyAPIView):
             user = request.user
             if not (user == board.owner or user in board.members.all()):
                 return self._forbidden()
-            serializer = self.get_serializer(board, data=request.data, partial=True)
+            serializer = BoardSerializer(board, data=request.data, partial=True)
             if serializer.is_valid():
-                self.perform_update(serializer)
-                return Response(serializer.data, status=200)
+                serializer.save()
+                # Board komplett neu laden, damit alle Relationen aktuell sind
+                board = Board.objects.get(pk=board_id)
+                detail_serializer = BoardDetailSerializer(board)
+                response_data = {
+                    "id": detail_serializer.data["id"],
+                    "title": detail_serializer.data["title"],
+                    "owner_data": detail_serializer.data["owner_data"],
+                    "members_data": detail_serializer.data["members_data"],
+                }
+                return Response(response_data, status=200)
             else:
                 return self._bad_request()
         except Board.DoesNotExist:
             return self._not_found()
-        except Exception:
-            return self._server_error()
+        except Exception as e:
+            # Fehlerausgabe für Debugging
+            return Response({'detail': f'Interner Serverfehler: {str(e)}'}, status=500)
+
 
     def destroy(self, request, *args, **kwargs):
         if not request.user or not request.user.is_authenticated:

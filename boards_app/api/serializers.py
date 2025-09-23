@@ -89,18 +89,18 @@ class BoardDetailSerializer(serializers.ModelSerializer):
     Felder:
         - id: Board-ID
         - title: Titel des Boards
-        - owner_id: User-ID des Eigentümers
-        - members: Liste der Mitglieder (als UserShortSerializer)
-        - tasks: Liste der Tasks (Platzhalter, bis Task-Modell existiert)
+        - owner_data: User-Daten des Eigentümers
+        - members_data: Liste der Mitglieder (als UserShortSerializer)
+        - tasks: Liste der Tasks
     """
     title = serializers.CharField(required=False)
-    owner_id = serializers.IntegerField(source='owner.id')
-    members = UserShortSerializer(many=True)
+    owner_data = UserShortSerializer(source='owner')
+    members_data = UserShortSerializer(source='members', many=True)
     tasks = serializers.SerializerMethodField()
 
     class Meta:
         model = Board
-        fields = ['id', 'title', 'owner_id', 'members', 'tasks']
+        fields = ['id', 'title', 'owner_data', 'members_data', 'tasks']
 
     def get_tasks(self, obj):
         from tasks_app.api.serializers import TaskListSerializer  
