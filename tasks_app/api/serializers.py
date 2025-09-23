@@ -4,6 +4,7 @@ from rest_framework.exceptions import PermissionDenied
 from tasks_app.models import Task
 from boards_app.api.serializers import UserShortSerializer
 from tasks_app.models import Comment
+from tasks_app.api.permissions import is_board_member_or_owner
 
 class CommentSerializer(serializers.ModelSerializer):
     """
@@ -118,25 +119,28 @@ class TaskCreateSerializer(serializers.ModelSerializer):
         self._validate_members(board, data)
         self._validate_status_priority(data)
         return data
-
+    
+# Validierung, ob der User Mitglied des Boards ist
     def _validate_board(self, board):
         user = self.context['request'].user
         if not board:
              raise serializers.ValidationError("Board ist erforderlich.")
-        if not (user == board.owner or user in board.members.all()):
-             raise PermissionDenied("Du bist kein Mitglied dieses Boards.")      
+        if not is_board_member_or_owner(user, board):
+             raise PermissionDenied("Du bist kein Mitglied dieses Boards.")   
 
     def _validate_members(self, board, data):
         for role, member in [('assignee', data.get('assignee')), ('reviewer', data.get('reviewer'))]:
-            if member and not (member == board.owner or member in board.members.all()):
+            if member and not is_board_member_or_owner(member, board):
                 raise serializers.ValidationError(f"{role.capitalize()} muss Mitglied des Boards sein.")
-
+            
+# Validierung für Status und Priorität
     def _validate_status_priority(self, data):
         if 'status' in data and data.get('status') not in ['to-do', 'in-progress', 'review', 'done']:
             raise serializers.ValidationError("Ungültiger Status.")
         if 'priority' in data and data.get('priority') not in ['low', 'medium', 'high']:
             raise serializers.ValidationError("Ungültige Priorität.")
 
+# Anpassen der Ausgabe nach Erstellung/Aktualisierung
     def to_representation(self, instance):
         rep = super().to_representation(instance)
         # Entferne assignee_id und reviewer_id aus der Ausgabe
