@@ -1,5 +1,6 @@
 from django.contrib.auth.models import User
 from rest_framework import serializers
+from rest_framework.exceptions import PermissionDenied
 from tasks_app.models import Task
 from boards_app.api.serializers import UserShortSerializer
 from tasks_app.models import Comment
@@ -121,9 +122,9 @@ class TaskCreateSerializer(serializers.ModelSerializer):
     def _validate_board(self, board):
         user = self.context['request'].user
         if not board:
-            raise serializers.ValidationError("Board ist erforderlich.")
+             raise serializers.ValidationError("Board ist erforderlich.")
         if not (user == board.owner or user in board.members.all()):
-            raise serializers.ValidationError("Du bist kein Mitglied dieses Boards.")
+             raise PermissionDenied("Du bist kein Mitglied dieses Boards.")      
 
     def _validate_members(self, board, data):
         for role, member in [('assignee', data.get('assignee')), ('reviewer', data.get('reviewer'))]:
