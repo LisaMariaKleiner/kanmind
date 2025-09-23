@@ -9,7 +9,7 @@ from rest_framework import generics, permissions, status
 
 from boards_app.api.permissions import IsBoardOwner, IsBoardOwnerOrMember
 from boards_app.models import Board
-from .serializers import BoardDetailSerializer, BoardListSerializer, BoardSerializer
+from .serializers import BoardDetailSerializer, BoardListSerializer, BoardPatchSerializer, BoardSerializer
 
 
 class BoardListCreateView(generics.ListCreateAPIView):
@@ -81,9 +81,9 @@ class BoardDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = BoardDetailSerializer
 
     def get_serializer_class(self):
-        if self.request.method in ['PUT', 'PATCH']:
-            return BoardSerializer  
-        return BoardDetailSerializer
+        if self.request.method == 'PATCH':
+            return BoardSerializer  # Für PATCH: einfacher Serializer (IDs)
+        return BoardDetailSerializer  # Für GET: Detail-Serializer (verschachtelt)
     
     def get_permissions(self):
         if self.request.method == 'DELETE':
@@ -123,25 +123,19 @@ class BoardDetailView(generics.RetrieveUpdateDestroyAPIView):
             user = request.user
             if not (user == board.owner or user in board.members.all()):
                 return self._forbidden()
-            serializer = BoardSerializer(board, data=request.data, partial=True)
+            # Nutze den richtigen Serializer für PATCH
+            serializer = self.get_serializer(board, data=request.data, partial=True)
             if serializer.is_valid():
                 serializer.save()
-                # Board komplett neu laden, damit alle Relationen aktuell sind
-                board = Board.objects.get(pk=board_id)
-                detail_serializer = BoardDetailSerializer(board)
-                response_data = {
-                    "id": detail_serializer.data["id"],
-                    "title": detail_serializer.data["title"],
-                    "owner_data": detail_serializer.data["owner_data"],
-                    "members_data": detail_serializer.data["members_data"],
-                }
-                return Response(response_data, status=200)
+                # Board neu laden, damit Änderungen an Members sichtbar sind
+                board.refresh_from_db()
+                patch_serializer = BoardPatchSerializer(board)
+                return Response(patch_serializer.data, status=200)
             else:
                 return self._bad_request()
         except Board.DoesNotExist:
             return self._not_found()
         except Exception as e:
-            # Fehlerausgabe für Debugging
             return Response({'detail': f'Interner Serverfehler: {str(e)}'}, status=500)
 
 

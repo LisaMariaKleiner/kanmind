@@ -105,3 +105,21 @@ class BoardDetailSerializer(serializers.ModelSerializer):
         from tasks_app.api.serializers import TaskListSerializer  
         tasks = Task.objects.filter(board=obj)
         return TaskListSerializer(tasks, many=True).data
+
+
+class BoardPatchSerializer(serializers.ModelSerializer):
+    """
+    Serializer für PATCH-Antwort eines Boards.
+
+    Felder:
+        - id: Board-ID
+        - title: Titel des Boards
+        - owner_data: User-Daten des Eigentümers
+        - members_data: Liste der Mitglieder (als UserShortSerializer)
+    """
+    owner_data = UserShortSerializer(source='owner', read_only=True)
+    members_data = UserShortSerializer(source='members', many=True, read_only=True)
+
+    class Meta:
+        model = Board
+        fields = ['id', 'title', 'owner_data', 'members_data']
