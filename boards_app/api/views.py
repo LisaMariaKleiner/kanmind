@@ -1,6 +1,7 @@
 from django.db.models import Q
 from django.contrib.auth.models import User
 
+from django.http import Http404
 from rest_framework.response import Response
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.authentication import TokenAuthentication
@@ -56,23 +57,17 @@ class BoardListCreateView(generics.ListCreateAPIView):
             return Response({'detail': 'Interner Serverfehler.'}, status=500)
     
     def list(self, request, *args, **kwargs):
-      if not request.user or not request.user.is_authenticated:
-        return Response(
-            {'detail': 'Nicht autorisiert. Der Benutzer muss eingeloggt sein.'},
-            status=401
-        )
-      try:
-        queryset = self.filter_queryset(self.get_queryset())
-        serializer = self.get_serializer(queryset, many=True)
-        return Response(serializer.data, status=200)
-      except Exception:
-        return Response({'detail': 'Interner Serverfehler.'}, status=500)
-      
-    def _unauthorized(self):
-        return Response(
-            {'detail': 'Nicht autorisiert. Der Benutzer muss eingeloggt sein.'},
-            status=401
-    )
+        if not request.user or not request.user.is_authenticated:
+            return Response(
+                {'detail': 'Nicht autorisiert. Der Benutzer muss eingeloggt sein.'},
+                status=401
+            )
+        try:
+            queryset = self.filter_queryset(self.get_queryset())
+            serializer = BoardListSerializer(queryset, many=True)
+            return Response(serializer.data, status=200)
+        except Exception:
+            return Response({'detail': 'Interner Serverfehler.'}, status=500)
 
 
 
@@ -105,13 +100,16 @@ class BoardDetailView(generics.RetrieveUpdateDestroyAPIView):
         if not request.user or not request.user.is_authenticated:
             return self._unauthorized()
         try:
-            instance = self.get_object()
+            board_id = kwargs.get('pk')
+            try:
+                instance = Board.objects.get(pk=board_id)
+            except Board.DoesNotExist:
+                return self._not_found()
+            user = request.user
+            if not (user == instance.owner or user in instance.members.all()):
+                return self._forbidden()
             serializer = self.get_serializer(instance)
             return Response(serializer.data, status=200)
-        except self.queryset.model.DoesNotExist:
-            return self._not_found()
-        except PermissionDenied:
-            return self._forbidden()
         except Exception:
             return self._server_error()
 
