@@ -182,3 +182,8 @@ class CommentDetailView(generics.RetrieveUpdateDestroyAPIView):
             return Comment.objects.get(pk=comment_id, task__id=task_id)
         except Comment.DoesNotExist:
             raise NotFound("Kommentar oder Task nicht gefunden.")
+        
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        self.check_object_permissions(request, instance)
+        return super().destroy(request, *args, **kwargs)
